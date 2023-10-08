@@ -20,9 +20,18 @@ const OrdersPage = async ({ params }: { params: { storeId: string } }) => {
     orderBy: {
       createdAt: "desc",
     },
+    
   });
 
-  const formattedOrders: OrderColumn[] = orders.map((item) => ({
+  
+  const filteredOrders = orders.filter((order) => {
+    const hasProducts = order.orderItems.length > 0;
+    const isPaid = order.isPaid;
+
+    return hasProducts && isPaid;
+  });
+
+  const formattedOrders: OrderColumn[] = filteredOrders.map((item) => ({
     id: item.id,
     phone: item.phone,
     address: item.address,
@@ -30,8 +39,8 @@ const OrdersPage = async ({ params }: { params: { storeId: string } }) => {
       .map((orderItem) => orderItem.product.name)
       .join(" , "),
     totalPrice: formatter.format(
-      item.orderItems.reduce((total, item) => {
-        return total + Number(item.product.price);
+      item.orderItems.reduce((total, orderItem) => {
+        return total + Number(orderItem.product.price);
       }, 0)
     ),
     isPaid: item.isPaid,

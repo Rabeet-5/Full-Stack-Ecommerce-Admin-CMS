@@ -31,6 +31,7 @@ export async function GET(
   }
 }
 
+
 export async function DELETE(
   req: Request,
   { params }: { params: { productId: string; storeId: string } }
@@ -57,18 +58,47 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 405 });
     }
 
-    const product = await prismadb.product.delete({
+    
+    const ordersToDelete = await prismadb.order.findMany({
+      where: {
+        storeId: params.storeId,
+        orderItems: {
+          some: {
+            productId: params.productId,
+          },
+        },
+      },
+    });
+
+    for (const order of ordersToDelete) {
+      await prismadb.orderItem.deleteMany({
+        where: {
+          orderId: order.id,
+        },
+      });
+      await prismadb.order.delete({
+        where: {
+          id: order.id,
+        },
+      });
+    }
+
+    
+    const deletedProduct = await prismadb.product.delete({
       where: {
         id: params.productId,
       },
     });
 
-    return NextResponse.json(product);
+    return NextResponse.json(deletedProduct);
   } catch (error) {
     console.log("[PRODUCT_DELETE]", error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }
+
+
+
 
 export async function PATCH(
   req: Request,
